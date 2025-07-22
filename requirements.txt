@@ -1,5 +1,9 @@
 fastapi
 uvicorn
 python-multipart
-aiofiles
 pdfplumber
+supabase-py
+python-dotenv
+pydantic
+requests
+aiofiles
