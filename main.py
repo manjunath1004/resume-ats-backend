@@ -1,4 +1,5 @@
 # ✅ Refined backend code for 90%+ ATS resume analysis
+
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -10,6 +11,7 @@ import os
 from supabase import create_client
 from dotenv import load_dotenv
 
+# ✅ Load environment variables
 load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
@@ -21,16 +23,34 @@ if not SUPABASE_URL or not SUPABASE_KEY:
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# ✅ FastAPI instance
 app = FastAPI()
+
+# ✅ CORS config (replace with your frontend domain if known)
+origins = [
+    "http://localhost:3000",
+    "https://your-frontend-url.vercel.app"  # 🔁 Replace with actual deployed frontend URL
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ✅ Root path to avoid 404 on base URL
+@app.get("/")
+def root():
+    return {"message": "✅ Resume ATS backend is live!"}
+
+# ✅ Health check route for Render
+@app.get("/healthz")
+def health_check():
+    return {"status": "ok"}
+
+# ✅ Keyword categories
 CATEGORY_KEYWORDS = {
     "technical": ["python", "java", "c++", "javascript", "react", "nodejs", "django", "flask", "html", "css", "sql", "mongodb", "mysql", "git", "github", "linux", "aws", "docker", "kubernetes"],
     "uiux": ["figma", "adobe xd", "photoshop", "illustrator", "ux", "ui", "wireframing", "branding", "canva", "visual design"],
@@ -40,6 +60,7 @@ CATEGORY_KEYWORDS = {
 ALL_KEYWORDS = [kw for lst in CATEGORY_KEYWORDS.values() for kw in lst]
 SECTION_HEADERS = ["summary", "education", "experience", "projects", "skills", "certifications", "achievements"]
 
+# ✅ Resume upload + parsing endpoint
 @app.post("/api/parse-resume")
 async def parse_resume(file: UploadFile = File(...)):
     try:
@@ -47,6 +68,7 @@ async def parse_resume(file: UploadFile = File(...)):
         file_id = str(uuid.uuid4())
         filename = f"{file_id}.pdf"
 
+        # ✅ Upload to Supabase
         upload_response = supabase.storage.from_(SUPABASE_BUCKET).upload(
             filename, contents, {"content-type": "application/pdf"}
         )
@@ -54,6 +76,7 @@ async def parse_resume(file: UploadFile = File(...)):
         if hasattr(upload_response, "error") and upload_response.error:
             raise Exception(f"Supabase upload error: {upload_response.error.message}")
 
+        # ✅ Extract text from PDF
         with pdfplumber.open(BytesIO(contents)) as pdf:
             text = "\n".join([page.extract_text() or "" for page in pdf.pages])
 
